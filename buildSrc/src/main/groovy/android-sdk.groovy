@@ -7,7 +7,8 @@ class AndroidSdk {
             21: "5.0.0_r2-robolectric-1",
             22: "5.1.1_r9-robolectric-1",
             23: "6.0.0_r1-robolectric-0",
+            24: "7.0.0_r1-robolectric-0",
     ]
 
-    static final int latestVersion = 23
+    static final int latestVersion = 24
 }

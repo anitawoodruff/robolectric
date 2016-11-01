@@ -9,7 +9,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import com.android.internal.policy.PolicyManager;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
@@ -106,16 +105,6 @@ public class ShadowWindowTest {
   public void forM_create_shouldCreatePhoneWindow() throws Exception {
     assertThat(ShadowWindow.create(RuntimeEnvironment.application).getClass().getName())
         .isEqualTo("com.android.internal.policy.PhoneWindow");
-  }
-
-  @Test @Config(sdk = Build.VERSION_CODES.M)
-  public void makeNewWindowSucks() throws Exception {
-    PolicyManager.makeNewWindow(RuntimeEnvironment.application);
-  }
-
-  @Test @Config(sdk = Build.VERSION_CODES.LOLLIPOP_MR1)
-  public void withLollipop_makeNewWindowSucks() throws Exception {
-    PolicyManager.makeNewWindow(RuntimeEnvironment.application);
   }
 
   public static class TestActivity extends Activity {
