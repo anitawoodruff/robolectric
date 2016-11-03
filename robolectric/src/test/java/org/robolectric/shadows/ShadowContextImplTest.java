@@ -19,6 +19,7 @@ import org.robolectric.TestApplication;
 import org.robolectric.TestRunners;
 import org.robolectric.annotation.Config;
 
+import static android.os.Build.VERSION_CODES.M;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(TestRunners.MultiApiWithDefaults.class)
@@ -76,6 +77,7 @@ public class ShadowContextImplTest {
   }
 
   @Test
+  @Config(sdk = M)
   public void createPackageContext() throws Exception {
     Context packageContext = context.createPackageContext(RuntimeEnvironment.application.getPackageName(), 0);
 
@@ -89,12 +91,6 @@ public class ShadowContextImplTest {
   public void createPackageContextRemoteViews() throws Exception {
     RemoteViews remoteViews = new RemoteViews(RuntimeEnvironment.application.getPackageName(), R.layout.remote_views);
     remoteViews.apply(RuntimeEnvironment.application, new FrameLayout(RuntimeEnvironment.application));
-  }
-
-  @Test
-  public void validateInMemoryDatabasePath() {
-    assertThat(context.getDatabasePath(ShadowContextImpl.SQLITE_IN_MEMORY_PATH).getPath())
-        .isEqualTo(ShadowContextImpl.SQLITE_IN_MEMORY_PATH);
   }
 }
 
