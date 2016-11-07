@@ -17,11 +17,12 @@ import org.robolectric.TestRunners;
 import org.robolectric.annotation.Config;
 import org.robolectric.util.ActivityController;
 
+import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
+import static android.os.Build.VERSION_CODES.M;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.robolectric.Shadows.shadowOf;
 
-@RunWith(TestRunners.WithDefaults.class)
-@Config(sdk = Build.VERSION_CODES.M)
+@RunWith(TestRunners.MultiApiWithDefaults.class)
 public class ShadowWindowTest {
   @Test
   public void getFlag_shouldReturnWindowFlags() throws Exception {
@@ -95,13 +96,13 @@ public class ShadowWindowTest {
     assertThat(indeterminate.getVisibility()).isEqualTo(View.GONE);
   }
 
-  @Test @Config(sdk = Build.VERSION_CODES.LOLLIPOP_MR1)
+  @Test @Config(maxSdk = LOLLIPOP_MR1)
   public void forPreM_create_shouldCreateImplPhoneWindow() throws Exception {
     assertThat(ShadowWindow.create(RuntimeEnvironment.application).getClass().getName())
         .isEqualTo("com.android.internal.policy.impl.PhoneWindow");
   }
 
-  @Test @Config(sdk = Build.VERSION_CODES.M)
+  @Test @Config(minSdk = M)
   public void forM_create_shouldCreatePhoneWindow() throws Exception {
     assertThat(ShadowWindow.create(RuntimeEnvironment.application).getClass().getName())
         .isEqualTo("com.android.internal.policy.PhoneWindow");
