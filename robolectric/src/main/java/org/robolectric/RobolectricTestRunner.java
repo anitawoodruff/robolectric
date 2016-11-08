@@ -2,6 +2,8 @@ package org.robolectric;
 
 import android.app.Application;
 import android.os.Build;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -40,6 +42,8 @@ import java.net.URL;
 import java.security.SecureRandom;
 import java.util.*;
 
+import static com.google.common.collect.Lists.reverse;
+
 /**
  * Installs a {@link org.robolectric.internal.bytecode.InstrumentingClassLoader} and
  * {@link org.robolectric.res.ResourceLoader} in order to provide a simulation of the Android runtime environment.
@@ -57,6 +61,12 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
   }
 
   private final HashSet<Class<?>> loadedTestClasses = new HashSet<>();
+  private final Map<String, Config> packageConfigCache = new LinkedHashMap<String, Config>() {
+    @Override
+    protected boolean removeEldestEntry(Map.Entry eldest) {
+      return size() > 10;
+    }
+  };
 
   /**
    * Creates a runner to run {@code testClass}. Looks in your working directory for your AndroidManifest.xml file
@@ -311,58 +321,108 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
   }
 
   public Config getConfig(Method method) {
-    Config config = new Config.Builder().build();
-
-    Config globalConfig = buildGlobalConfig();
-    if (globalConfig != null) {
-      config = new Config.Implementation(config, globalConfig);
-    }
-
-    Config methodClassConfig = method.getDeclaringClass().getAnnotation(Config.class);
-    if (methodClassConfig != null) {
-      config = new Config.Implementation(config, methodClassConfig);
-    }
-
-    ArrayList<Class> testClassHierarchy = new ArrayList<>();
     Class testClass = getTestClass().getJavaClass();
 
-    while (testClass != null) {
-      testClassHierarchy.add(0, testClass);
-      testClass = testClass.getSuperclass();
+    Config config = new Config.Builder().build();
+
+    Config globalConfig = cachedPackageConfig(""); // global config
+    config = override(config, globalConfig);
+
+    for (String packageName : reverse(packagesFor(testClass))) {
+      Config packageConfig = cachedPackageConfig(packageName);
+      config = override(config, packageConfig);
     }
 
-    for (Class clazz : testClassHierarchy) {
+    for (Class clazz : reverse(parentClassesFor(testClass))) {
       Config classConfig = (Config) clazz.getAnnotation(Config.class);
-      if (classConfig != null) {
-        config = new Config.Implementation(config, classConfig);
-      }
+      config = override(config, classConfig);
     }
 
     Config methodConfig = method.getAnnotation(Config.class);
-    if (methodConfig != null) {
-      config = new Config.Implementation(config, methodConfig);
-    }
+    config = override(config, methodConfig);
 
     return config;
   }
 
+  @NotNull
+  private List<String> packagesFor(Class<?> javaClass) {
+    String testPackageName = javaClass.getPackage().getName();
+    List<String> packageHierarchy = new ArrayList<>();
+    while (!testPackageName.isEmpty()) {
+      packageHierarchy.add(testPackageName);
+      int lastDot = testPackageName.lastIndexOf('.');
+      testPackageName = lastDot > 1 ? testPackageName.substring(0, lastDot) : "";
+    }
+    return packageHierarchy;
+  }
+
+  @NotNull
+  private List<Class> parentClassesFor(Class testClass) {
+    List<Class> testClassHierarchy = new ArrayList<>();
+    while (testClass != null && !testClass.equals(Object.class)) {
+      testClassHierarchy.add(testClass);
+      testClass = testClass.getSuperclass();
+    }
+    return testClassHierarchy;
+  }
+
+  private Config override(Config config, Config classConfig) {
+    return classConfig != null ? new Config.Implementation(config, classConfig) : config;
+  }
+
+  @Nullable
+  private Config cachedPackageConfig(String packageName) {
+    synchronized (packageConfigCache) {
+      Config config = packageConfigCache.get(packageName);
+      if (config == null && !packageConfigCache.containsKey(packageName)) {
+        config = packageName.isEmpty() ? buildGlobalConfig() : buildPackageConfig(packageName);
+        packageConfigCache.put(packageName, config);
+      }
+      return config;
+    }
+  }
+
   /**
-   * Generate the global {@link Config}. More specific test class and test method configurations
+   * Generate the global {@link Config}.
+   *
+   * More specific packages, test classes, and test method configurations
    * will override values provided here.
    *
-   * The default implementation uses properties provided by {@link #getConfigProperties()}.
+   * The default implementation uses properties provided by {@link #getConfigProperties(String)}.
    *
    * The returned object is likely to be reused for many tests.
    *
-   * @return global {@link Config} object
+   * @return global {@link Config} object.
    */
   protected Config buildGlobalConfig() {
-    return Config.Implementation.fromProperties(getConfigProperties());
+    return Config.Implementation.fromProperties(getConfigProperties(""));
   }
 
-  protected Properties getConfigProperties() {
+  /**
+   * Generate {@link Config} for the specified package.
+   *
+   * More specific packages, test classes, and test method configurations
+   * will override values provided here.
+   *
+   * The default implementation uses properties provided by {@link #getConfigProperties(String)}.
+   *
+   * The returned object is likely to be reused for many tests.
+   *
+   * @param packageName The name of the package, or empty string (<code>""</code>) for the top level package.
+   * @return {@link Config} object for the specified package.
+   */
+  @Nullable
+  private Config buildPackageConfig(String packageName) {
+    return Config.Implementation.fromProperties(getConfigProperties(packageName));
+  }
+
+  /**
+   * Return a {@link Properties} file for the given package name, or <code>null</code> if none is available.
+   */
+  protected Properties getConfigProperties(String packageName) {
     ClassLoader classLoader = getClass().getClassLoader();
-    try (InputStream resourceAsStream = classLoader.getResourceAsStream(CONFIG_PROPERTIES)) {
+    String resourceName = packageName.replace('.', '/') + "/" +  CONFIG_PROPERTIES;
+    try (InputStream resourceAsStream = classLoader.getResourceAsStream(resourceName)) {
       if (resourceAsStream == null) return null;
       Properties properties = new Properties();
       properties.load(resourceAsStream);
