@@ -18,9 +18,27 @@ import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.*;
-import org.robolectric.internal.bytecode.*;
-import org.robolectric.internal.dependency.*;
+import org.robolectric.internal.GradleManifestFactory;
+import org.robolectric.internal.InstrumentingClassLoaderFactory;
+import org.robolectric.internal.ManifestFactory;
+import org.robolectric.internal.ManifestIdentifier;
+import org.robolectric.internal.MavenManifestFactory;
+import org.robolectric.internal.ParallelUniverse;
+import org.robolectric.internal.ParallelUniverseInterface;
+import org.robolectric.internal.SdkConfig;
+import org.robolectric.internal.SdkEnvironment;
+import org.robolectric.internal.bytecode.ClassHandler;
+import org.robolectric.internal.bytecode.InstrumentationConfiguration;
+import org.robolectric.internal.bytecode.InvokeDynamic;
+import org.robolectric.internal.bytecode.RobolectricInternals;
+import org.robolectric.internal.bytecode.ShadowInvalidator;
+import org.robolectric.internal.bytecode.ShadowMap;
+import org.robolectric.internal.bytecode.ShadowWrangler;
+import org.robolectric.internal.dependency.CachedDependencyResolver;
+import org.robolectric.internal.dependency.DependencyResolver;
+import org.robolectric.internal.dependency.LocalDependencyResolver;
+import org.robolectric.internal.dependency.MavenDependencyResolver;
+import org.robolectric.internal.dependency.PropertiesDependencyResolver;
 import org.robolectric.manifest.AndroidManifest;
 import org.robolectric.res.Fs;
 import org.robolectric.res.FsFile;
@@ -34,13 +52,22 @@ import org.robolectric.util.Logger;
 import org.robolectric.util.Pair;
 import org.robolectric.util.ReflectionHelpers;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import static com.google.common.collect.Lists.reverse;
 
@@ -420,9 +447,8 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
    * Return a {@link Properties} file for the given package name, or <code>null</code> if none is available.
    */
   protected Properties getConfigProperties(String packageName) {
-    ClassLoader classLoader = getClass().getClassLoader();
-    String resourceName = packageName.replace('.', '/') + "/" +  CONFIG_PROPERTIES;
-    try (InputStream resourceAsStream = classLoader.getResourceAsStream(resourceName)) {
+    String resourceName = packageName.replace('.', '/') + "/" + CONFIG_PROPERTIES;
+    try (InputStream resourceAsStream = getResourceAsStream(resourceName)) {
       if (resourceAsStream == null) return null;
       Properties properties = new Properties();
       properties.load(resourceAsStream);
@@ -430,6 +456,11 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  // visible for testing
+  InputStream getResourceAsStream(String resourceName) {
+    return getClass().getClassLoader().getResourceAsStream(resourceName);
   }
 
   protected void configureShadows(SdkEnvironment sdkEnvironment, Config config) {

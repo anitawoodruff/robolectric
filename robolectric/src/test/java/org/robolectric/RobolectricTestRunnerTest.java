@@ -1,7 +1,6 @@
 package org.robolectric;
 
 import android.app.Application;
-import com.google.common.collect.ImmutableMap;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.model.InitializationError;
@@ -9,13 +8,13 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowView;
 import org.robolectric.shadows.ShadowViewGroup;
 
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Properties;
 
+import static com.google.common.collect.ImmutableMap.of;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RobolectricTestRunnerTest {
@@ -93,8 +92,7 @@ public class RobolectricTestRunnerTest {
 
   @Test
   public void shouldLoadDefaultsFromGlobalPropertiesFile() throws Exception {
-    Properties properties = properties(
-        "sdk: 432\n" +
+    String properties = "sdk: 432\n" +
             "manifest: --none\n" +
             "qualifiers: from-properties-file\n" +
             "resourceDir: from/properties/file/res\n" +
@@ -104,26 +102,25 @@ public class RobolectricTestRunnerTest {
             "packageName: com.example.test\n" +
             "instrumentedPackages: com.example.test1, com.example.test2\n" +
             "libraries: libs/test, libs/test2\n" +
-            "constants: org.robolectric.RobolectricTestRunnerTest$BuildConfigConstants3");
+            "constants: org.robolectric.RobolectricTestRunnerTest$BuildConfigConstants3";
 
-    assertConfig(configFor(Test2.class, "withoutAnnotation", ImmutableMap.of("", properties)),
+    assertConfig(configFor(Test2.class, "withoutAnnotation", of("/robolectric.properties", properties)),
         new int[] {432}, "--none", TestFakeApp.class, "com.example.test", "from-properties-file", "from/properties/file/res", "from/properties/file/assets", new Class[] {ShadowView.class, ShadowViewGroup.class}, new String[]{"com.example.test1", "com.example.test2"}, new String[]{"libs/test", "libs/test2"}, BuildConfigConstants3.class);
   }
 
   @Test
   public void shouldMergeConfigFromTestClassPackageProperties() throws Exception {
-    Properties packageProperties = properties("sdk: 432\n");
-    assertConfig(configFor(Test2.class, "withoutAnnotation", ImmutableMap.of("org.robolectric", packageProperties)),
+    assertConfig(configFor(Test2.class, "withoutAnnotation", of("org/robolectric/robolectric.properties", "sdk: 432\n")),
         new int[] {432}, "--default", Application.class, "", "", "res", "assets", new Class[] {}, new String[]{}, new String[]{}, null);
   }
 
   @Test
   public void shouldMergeConfigUpPackageHierarchy() throws Exception {
     assertConfig(configFor(Test2.class, "withoutAnnotation",
-        ImmutableMap.of(
-            "org.robolectric", properties("qualifiers: from-org-robolectric\nlibraries: FromOrgRobolectric\n"),
-            "org", properties("sdk: 123\nqualifiers: from-org\nlibraries: FromOrg\n"),
-            "", properties("sdk: 456\nqualifiers: from-top-level\nlibraries: FromTopLevel\n")
+        of(
+            "org/robolectric/robolectric.properties", "qualifiers: from-org-robolectric\nlibraries: FromOrgRobolectric\n",
+            "org/robolectric.properties", "sdk: 123\nqualifiers: from-org\nlibraries: FromOrg\n",
+            "/robolectric.properties", "sdk: 456\nqualifiers: from-top-level\nlibraries: FromTopLevel\n"
             )
         ),
         new int[] {123}, "--default", Application.class, "", "from-org-robolectric", "res", "assets", new Class[] {}, new String[]{},
@@ -132,33 +129,32 @@ public class RobolectricTestRunnerTest {
 
   @Test
   public void withEmptyShadowList_shouldLoadDefaultsFromGlobalPropertiesFile() throws Exception {
-    Properties properties = properties("shadows:");
-    assertConfig(configFor(Test2.class, "withoutAnnotation", ImmutableMap.of("", properties)),
+    assertConfig(configFor(Test2.class, "withoutAnnotation", of("/robolectric.properties", "shadows:")),
         new int[0],  "--default", Application.class, "", "", "res", "assets", new Class[] {}, new String[]{}, new String[]{}, null);
   }
 
-  private Config configFor(Class<?> testClass, String methodName, final Map<String, Properties> configProperties) throws InitializationError {
-    Method info;
-    try {
-      info = testClass.getMethod(methodName);
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
-    }
+  private Config configFor(Class<?> testClass, String methodName, final Map<String, String> configProperties) throws InitializationError {
+    Method info = getMethod(testClass, methodName);
     return new RobolectricTestRunner(testClass) {
-      @Override protected Properties getConfigProperties(String packageName) {
-        return configProperties.get(packageName);
+      @Override
+      InputStream getResourceAsStream(String resourceName) {
+        String properties = configProperties.get(resourceName);
+        return properties == null ? null : new ByteArrayInputStream(properties.getBytes());
       }
     }.getConfig(info);
   }
 
   private Config configFor(Class<?> testClass, String methodName) throws InitializationError {
-    Method info;
+    Method info = getMethod(testClass, methodName);
+    return new RobolectricTestRunner(testClass).getConfig(info);
+  }
+
+  private Method getMethod(Class<?> testClass, String methodName) {
     try {
-      info = testClass.getMethod(methodName);
+      return testClass.getMethod(methodName);
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(e);
     }
-    return new RobolectricTestRunner(testClass).getConfig(info);
   }
 
   private void assertConfig(Config config, int[] sdk, String manifest, Class<? extends Application> application, String packageName, String qualifiers, String resourceDir, String assetsDir, Class<?>[] shadows, String[] instrumentedPackages, String[] libraries, Class<?> constants) {
@@ -283,12 +279,5 @@ public class RobolectricTestRunnerTest {
         "instrumentedPackages" + Arrays.toString(sortedInstrumentedPackages) + "\n" +
         "libraries=" + Arrays.toString(sortedLibraries) + "\n" +
         "constants=" + constants;
-  }
-
-  private Properties properties(String s) throws IOException {
-    StringReader reader = new StringReader(s);
-    Properties properties = new Properties();
-    properties.load(reader);
-    return properties;
   }
 }
