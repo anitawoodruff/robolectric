@@ -12,7 +12,7 @@ dependencies {
     provided "com.google.android.gms:play-services-base:8.4.0"
     provided "com.google.android.gms:play-services-basement:8.4.0"
 
-    provided "org.robolectric:android-all:${AndroidSdk.versions[AndroidSdk.latestVersion]}"
+    provided AndroidSdk.MAX_SDK.dependencyString()
 
     // Testing dependencies
     testCompile "junit:junit:4.8.2"

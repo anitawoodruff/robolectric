@@ -11,7 +11,6 @@ class ProvidedPlugin implements Plugin<Project> {
         project.sourceSets {
             main.compileClasspath += project.configurations.provided
             test.compileClasspath += project.configurations.provided
-            test.runtimeClasspath += project.configurations.provided
         }
     }
 }

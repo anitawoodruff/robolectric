@@ -63,6 +63,7 @@ public class Logger {
   }
 
   private static boolean loggingEnabled() {
-    return Boolean.getBoolean(LOGGING_ENABLED);
+    return true;
+//    return Boolean.getBoolean(LOGGING_ENABLED);
   }
 }

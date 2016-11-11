@@ -8,7 +8,7 @@ dependencies {
     compile project(":robolectric")
     compile project(":robolectric-shadows/shadows-core")
 
-    provided "org.robolectric:android-all:${AndroidSdk.versions[AndroidSdk.latestVersion]}"
+    provided AndroidSdk.MAX_SDK.dependencyString()
     compile "com.ibm.icu:icu4j:53.1"
 
     provided "com.google.android.maps:maps:23_r1"

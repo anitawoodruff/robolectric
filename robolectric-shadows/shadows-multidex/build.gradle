@@ -10,7 +10,7 @@ dependencies {
 
     provided "com.android.support:multidex:1.0.1"
 
-    provided "org.robolectric:android-all:${AndroidSdk.versions[AndroidSdk.latestVersion]}"
+    provided AndroidSdk.MAX_SDK.dependencyString()
 
     // Testing dependencies
     testCompile "junit:junit:4.8.2"
