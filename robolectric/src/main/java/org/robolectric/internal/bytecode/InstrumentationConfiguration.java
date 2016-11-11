@@ -212,16 +212,16 @@ public class InstrumentationConfiguration {
 
     // Both internal and public R class must be loaded from the same classloader since they only
     // have stable ID's within a given API version.
-    if (name.matches("com\\.android\\.internal\\.R(\\$.*)?")) {
-      return true;
-    }
+//    if (name.matches("com\\.android\\.internal\\.R(\\$.*)?")) {
+//      return true;
+//    }
 
     // Android SDK code almost universally refers to com.android.internal.R, except
     // when refering to android.R.stylable, as in HorizontalScrollView. arghgh.
     // See https://github.com/robolectric/robolectric/issues/521
-    if (name.equals("android.R$styleable")) {
-      return true;
-    }
+//    if (name.equals("android.R$styleable")) {
+//      return true;
+//    }
 
     // Hack. Fixes https://github.com/robolectric/robolectric/issues/1864
     if (name.equals("javax.net.ssl.DistinguishedNameParser")) {

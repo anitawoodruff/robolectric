@@ -15,6 +15,9 @@ import android.os.Build;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.util.Xml;
+import com.android.dex.util.ExceptionWithContext;
+import com.android.internal.util.XmlUtils;
 import com.google.common.collect.ImmutableMap;
 import org.assertj.core.data.Offset;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +55,17 @@ import static org.robolectric.Shadows.shadowOf;
 @RunWith(TestRunners.MultiApiWithDefaults.class)
 public class ShadowResourcesTest {
   private Resources resources;
+
+  @Test
+  public void should() throws Exception {
+    XmlResourceParser parser = RuntimeEnvironment.application.getResources().getXml(R.drawable.vector);
+    while (!parser.getName().equals("vector")) parser.next();
+
+    AttributeSet attributeSet = Xml.asAttributeSet(parser);
+
+    TypedArray actual = RuntimeEnvironment.application.obtainStyledAttributes(attributeSet, new int[]{android.R.attr.viewportHeight});
+    assertThat(actual.getDimension(0, -1f)).isEqualTo(24.0f);
+  }
 
   @Before
   public void setup() throws Exception {
@@ -558,14 +572,16 @@ public class ShadowResourcesTest {
 
   @Test
   @Config(sdk = KITKAT)
-  // todo: get this working on KITKAT by fixing resource id collision issue
-  // todo: change this to @Config(minSdk = KITKAT)
   public void whenAttrIsNotDefinedInRuntimeSdk_getResourceName_doesntFindRequestedResourceButInsteadFindsInternalResourceWithSameId() {
     // asking for an attr defined after the current SDK doesn't have a defined result; in this case it returns
     //   numberPickerStyle from com.internal.android.R
     assertThat(RuntimeEnvironment.application.getResources().getResourceName(android.R.attr.viewportHeight))
         .isEqualTo("android:attr/numberPickerStyle");
+
+    assertThat(RuntimeEnvironment.application.getResources().getIdentifier("viewportHeight", "attr", "android")).isEqualTo(0);
   }
+
+
 
   @Test
   public void subClassInitializedOK() {

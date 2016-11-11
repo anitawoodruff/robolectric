@@ -254,7 +254,9 @@ public final class ShadowAssetManager {
     if (block == null) {
       throw new Resources.NotFoundException(resName.getFullyQualifiedName());
     }
-    return ResourceParser.from(block, resName.packageName, getResourceLoader());
+
+    ResourceLoader resourceLoader = block.getFilename().contains(".jar!") ? shadowOf(AssetManager.getSystem()).getResourceLoader() : getResourceLoader();
+    return ResourceParser.from(block, resName.packageName, resourceLoader);
   }
 
   @HiddenApi @Implementation
@@ -638,6 +640,9 @@ public final class ShadowAssetManager {
 
   @Implementation
   public String getResourceName(int resid) {
+    if ((resid & 0xff000000) == 0x01000000) {
+
+    }
     return getResName(resid).getFullyQualifiedName();
   }
 

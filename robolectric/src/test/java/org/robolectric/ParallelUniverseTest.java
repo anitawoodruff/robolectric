@@ -42,7 +42,7 @@ public class ParallelUniverseTest {
   }
 
   private void setUpApplicationStateDefaults() {
-    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), new AndroidManifest(null, null, null, "package"), getDefaultConfig());
+    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), null, new AndroidManifest(null, null, null, "package"), getDefaultConfig());
   }
 
   @Test
@@ -116,7 +116,7 @@ public class ParallelUniverseTest {
   public void setUpApplicationState_setsVersionQualifierFromSdkConfig() {
     String givenQualifiers = "";
     Config c = new Config.Builder().setQualifiers(givenQualifiers).build();
-    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), new AndroidManifest(null, null, null, "packagename"), c);
+    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), null, new AndroidManifest(null, null, null, "packagename"), c);
     assertThat(getQualifiersfromSystemResources()).contains("v18");
     assertThat(RuntimeEnvironment.getQualifiers()).contains("v18");
   }
@@ -125,7 +125,7 @@ public class ParallelUniverseTest {
   public void setUpApplicationState_setsVersionQualifierFromConfigQualifiers() {
     String givenQualifiers = "land-v17";
     Config c = new Config.Builder().setQualifiers(givenQualifiers).build();
-    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), new AndroidManifest(null, null, null, "packagename"), c);
+    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), null, new AndroidManifest(null, null, null, "packagename"), c);
     assertThat(getQualifiersfromSystemResources()).contains("land-v17");
     assertThat(RuntimeEnvironment.getQualifiers()).contains("land-v17");
   }
@@ -134,7 +134,7 @@ public class ParallelUniverseTest {
   public void setUpApplicationState_setsVersionQualifierFromSdkConfigWithOtherQualifiers() {
     String givenQualifiers = "large-land";
     Config c = new Config.Builder().setQualifiers(givenQualifiers).build();
-    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), new AndroidManifest(null, null, null, "packagename"), c);
+    pu.setUpApplicationState(null, new DefaultTestLifecycle(), RuntimeEnvironment.getSystemResourceLoader(), null, new AndroidManifest(null, null, null, "packagename"), c);
     assertThat(getQualifiersfromSystemResources()).contains("large-land-v18");
     assertThat(RuntimeEnvironment.getQualifiers()).contains("large-land-v18");
   }
