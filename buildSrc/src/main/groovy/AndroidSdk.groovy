@@ -28,10 +28,10 @@ class AndroidSdk implements Comparable<AndroidSdk> {
     private final String minJdkVersion
 
     AndroidSdk(int apiLevel, String androidVersion, int frameworkSdkBuildVersion, String minJdkVersion) {
-        this.minJdkVersion = minJdkVersion
-        this.frameworkSdkBuildVersion = frameworkSdkBuildVersion
-        this.androidVersion = androidVersion
         this.apiLevel = apiLevel
+        this.androidVersion = androidVersion
+        this.frameworkSdkBuildVersion = frameworkSdkBuildVersion
+        this.minJdkVersion = minJdkVersion
     }
 
     boolean isSupportedOnThisJdk() {
@@ -40,6 +40,10 @@ class AndroidSdk implements Comparable<AndroidSdk> {
 
     String dependencyString() {
         return "org.robolectric:android-all:${androidVersion}-robolectric-${frameworkSdkBuildVersion}"
+    }
+
+    String propertiesString() {
+        return "${apiLevel}:${androidVersion}:${frameworkSdkBuildVersion}:${minJdkVersion}"
     }
 
     @Override

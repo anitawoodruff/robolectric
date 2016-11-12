@@ -1,5 +1,5 @@
 dependencies {
     // Compile dependencies
-    provided "com.intellij:annotations:12.0"
-    provided AndroidSdk.MAX_SDK.dependencyString()
+    compileOnly "com.intellij:annotations:12.0"
+    compileOnly AndroidSdk.MAX_SDK.dependencyString()
 }
